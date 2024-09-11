@@ -1,0 +1,8 @@
+directories:
+  stored_csv_xlsx_directory: data
+  persist_directory: /home/hungle/Project/RAG/data/chroma
+llm_configs:
+
+rag_config:
+  collection_name: patient_medical_information
+  top_k: 1
