@@ -1,10 +1,15 @@
 directories:
-  stored_csv_xlsx_directory: data
-  persist_directory: /home/hungle/Project/RAG/data/chroma
+  stored_csv_xlsx_directory: ../data
+  persist_directory: ../data/chroma
 
-model: 'ruslanmv/Medical-Llama3-8B' 
+google_ai_config:
+  GOOGLE_API_KEY: 'AIzaSyDzYEtOw-rxGSj_bKcR1QkSW9NeWL0k_UA'
 
 llm_configs:
+  model_pretrain: 'FreedomIntelligence/DiagnosisGPT-6B' 
+  max_tokens: 1024
+  temperature: 0.6
+  top_p: 0.9
 
 rag_config:
   collection_name: patient_medical_information
