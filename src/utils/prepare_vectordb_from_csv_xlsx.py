@@ -32,7 +32,7 @@ class PrepareVectorDBFromTabularData:
         the data into ChromaDB, and validating the existence of the injected data.
         """
         self.df, self.file_name = self._load_dataframe(self.file_directory)
-        self.docs= self._prepare_data_for_injection(df=self.df, file_name=self.file_name)
+        self.docs, self.metadatas, self.ids, self.embeddings = self._prepare_data_for_injection(df=self.df, file_name=self.file_name)
         self._inject_data_into_chromadb(self.docs)
         # self._validate_db
 
@@ -63,22 +63,26 @@ class PrepareVectorDBFromTabularData:
         
         Args:
             df (pd.DataFrame): The DataFrame containing the data to be processed.
-            file_name (str): The base name of the file  for use in metadata.
+            file_name (str): The base name of the file for use in metadata.
             
         Returns:
-            Document of Langchain
+            list, list, list, list: Lists containing documents, metadatas, ids, and embeddings respectively.
         """
         docs = []
-        
+        metadatas = []
         ids = []
-        
+        embeddings = []
         for index, row in df.iterrows():
-            output_str = ''
+            output_str = ""
+            # Treat each row as a separate chunk
             for col in df.columns:
-                output_str += f'{col}:{row[col]}\n'
-            doc = Document(page_content= output_str, metadatas = {'source': file_name, 'ids': f'id{index}'})
-            docs.append(doc)
-        return docs
+                output_str += f"{col}: {row[col]},\n"
+            response = self.APPCFG.google_embedding.embed_query(output_str)
+            embeddings.append(response)
+            docs.append(output_str)
+            metadatas.append({"source": file_name})
+            ids.append(f"id{index}")
+        return docs, metadatas, ids, embeddings
 
     def _inject_data_into_chromadb(self,data):
         """
@@ -87,8 +91,12 @@ class PrepareVectorDBFromTabularData:
         Raises an error if the collection_name already exists in ChromaDB.
         The method prints a confirmation message upon successful data injection.
         """
-        vectorstore = Chroma.from_documents(
-                     documents=data,                 # Data
-                     embedding=self.APPCFG.google_embedding,    # Embedding model
-                     persist_directory="/home/hungle/Project/RAG/data/chroma_db" # Directory to save data
-                     )
+        collection = self.APPCFG.chroma_client.create_collection(name=self.APPCFG.collection_name)
+        collection.add(
+            documents=self.docs,
+            metadatas=self.metadatas,
+            embeddings=self.embeddings,
+            ids=self.ids
+        )
+        print("==============================")
+        print("Data is stored in ChromaDB.")
